@@ -7,8 +7,7 @@ import sys
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-
-
+import h5py
 
 if sys.hexversion >= 0x03000000:
     import _thread as thread
@@ -29,8 +28,12 @@ class ReaderDepthCsv(object):
 
     def __init__(self, filename):
         self._filename = filename
-        self._allFrames = np.genfromtxt(filename, delimiter=',')
-        self._height = 424 #zahardkodowana wartość
+        #self._allFrames = np.genfromtxt(filename, delimiter=',')
+
+        with h5py.File(filename, 'r') as hf:
+            self._allFrames = hf['all-frames'][:]
+
+        self._height = 424
         self._chestDistances = []
         self._y1 = None
         self._y2 = None
@@ -98,7 +101,6 @@ class DepthRuntime(object):
                                                 pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE, 32)
 
         self._allFrames = []
-        self._chestDistances = []
 
         pygame.display.set_caption("Kinect for Windows v2 Depth")
 
@@ -117,7 +119,10 @@ class DepthRuntime(object):
 
     def save(self, filename):
         # Saving to a CSV file
-        np.savetxt(filename, self._allFrames, delimiter=",")
+        #np.savetxt(filename, self._allFrames, delimiter=",")
+
+        with h5py.File(filename, 'w') as hf:
+            hf.create_dataset("all-frames", data=self._allFrames)
 
     def run(self):
         # -------- Main Program Loop -----------
@@ -133,7 +138,6 @@ class DepthRuntime(object):
                 elif event.type == pygame.VIDEORESIZE: # window resized
                     self._screen = pygame.display.set_mode(event.dict['size'], 
                                                 pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE, 32)
-                    
 
             # --- Getting frames and drawing  
             if self._kinect.has_new_depth_frame():
@@ -148,10 +152,7 @@ class DepthRuntime(object):
             # --- Go ahead and update the screen with what we've drawn.
             pygame.display.flip()
 
-
             # --- Limit to 60 frames per second
-
-
             # self._clock.tick(60)
 
         # Close our Kinect sensor, close the window and quit.
@@ -166,12 +167,12 @@ __main__ = "Kinect v2 Depth"
 # Zapsujemy
 game = DepthRuntime()
 game.run()
-game.save('filename.csv')
+game.save('filename.h5')
 
 # TODO podgląd?
 
 # Odczytujemy
-reader = ReaderDepthCsv('filename.csv')
+reader = ReaderDepthCsv('filename.h5')
 reader.select_roi(0)
 reader.show_depth_plot(0.04)
 
