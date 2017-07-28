@@ -27,9 +27,10 @@ SKELETON_COLORS = [pygame.color.THECOLORS["red"],
 
 class ReaderDepthCsv(object):
 
-    def __init__(self, allFrames, height):
-        self._allFrames = allFrames
-        self._height = height
+    def __init__(self, filename):
+        self._filename = filename
+        self._allFrames = np.genfromtxt(filename, delimiter=',')
+        self._height = 424 #zahardkodowana wartość
         self._chestDistances = []
         self._y1 = None
         self._y2 = None
@@ -65,8 +66,8 @@ class ReaderDepthCsv(object):
 
 
         plt.plot(np.arange(0, len(self._chestDistances) * t_stamp, t_stamp), self._chestDistances,'m-')
-        plt.ylabel("czas")
-        plt.xlabel("odległość [mm]")
+        plt.xlabel("czas [s]")
+        plt.ylabel("odległość [mm]")
         plt.show(block=True)
 
 
@@ -161,12 +162,16 @@ class DepthRuntime(object):
 __main__ = "Kinect v2 Depth"
 
 
+
+# Zapsujemy
 game = DepthRuntime()
 game.run()
 game.save('filename.csv')
 
+# TODO podgląd?
 
-reader = ReaderDepthCsv(game._allFrames, game._kinect.depth_frame_desc.Height)
+# Odczytujemy
+reader = ReaderDepthCsv('filename.csv')
 reader.select_roi(0)
 reader.show_depth_plot(0.04)
 
